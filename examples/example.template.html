@@ -1,0 +1,650 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      content="http://apparition.link/img/logo_icon_black.png"
+      property="og:image"
+    />
+    <meta
+      content="Apparition Metrics Web SDK Example App"
+      property="og:title"
+    />
+    <meta
+      content="A basic example to demonstrate some of the ways that the Web SDK can be used"
+      property="og:description"
+    />
+    <title>Apparition Metrics Web SDK Example App</title>
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"
+    />
+    <style type="text/css">
+      .lineBreak {
+        opacity: 0.5;
+        background-color: lightgray;
+      }
+
+      .horizontalLine {
+        height: 0.5px;
+        width: 100%;
+      }
+
+      .verticalLine {
+        width: 0.5px;
+        background-color: lightgray;
+      }
+
+      .split-container {
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        width: 90%;
+        margin: auto;
+      }
+
+      .container {
+        width: 45%;
+        margin: 10px;
+        padding: 15px;
+        background: #fff;
+        border-radius: 5px;
+        box-sizing: border-box;
+      }
+
+      .apiInput {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box;
+        transition:
+          border-color 0.3s ease,
+          box-shadow 0.3s ease;
+      }
+
+      input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+      }
+
+      @media (max-width: 768px) {
+        .split-container {
+          flex-direction: column;
+        }
+
+        .container {
+          width: 100%;
+          margin: 10px 0;
+        }
+
+        .verticalLine {
+          display: none;
+        }
+
+        .api-info {
+          order: -1;
+        }
+
+        .api-methods {
+          order: 1;
+        }
+      }
+
+      #configButtons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        margin-bottom: 10px;
+      }
+    </style>
+    <script>
+      function getFinalValue(inputValue, documentKey) {
+        if (inputValue) return inputValue;
+        return document.getElementById(documentKey).value.trim();
+      }
+
+      function updateQueryParams(apparitionKey, apiUrl, script) {
+        let finalApparitionKey = getFinalValue(
+          apparitionKey,
+          "apparitionKeyInput",
+        );
+        let finalApiUrl = getFinalValue(apiUrl, "apiUrlInput");
+
+        if (!finalApparitionKey && !finalApiUrl) {
+          alert("Please provide at least one value to update.");
+          return;
+        }
+
+        const url = new URL(window.location.href);
+        if (finalApparitionKey)
+          url.searchParams.set("apparition_key", finalApparitionKey);
+        if (finalApiUrl) url.searchParams.set("api_url", finalApiUrl);
+
+        window.location.href = url.toString();
+      }
+
+      function getApparitionKey() {
+        const queryParams = getQueryParams();
+        return queryParams["apparition_key"] || "key_place_holder";
+      }
+
+      function getApiUrlLocal() {
+        const queryParams = getQueryParams();
+        return queryParams["api_url"] || "api_place_holder";
+      }
+
+      function getApparitionScript() {
+        return "script_place_holder";
+      }
+
+      function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        const queryParams = {};
+        for (const [key, value] of params.entries()) {
+          queryParams[key] = value;
+        }
+        return queryParams;
+      }
+
+      function setLabelText() {
+        const keyLabel = document.getElementById("apparitionKeyLabel");
+        keyLabel.textContent = `Apparition Key: ${getApparitionKey()}`;
+
+        const apiLabel = document.getElementById("apiUrlLabel");
+        apiLabel.textContent = `Api Url: ${getApiUrlLocal()}`;
+      }
+
+      function onLoad() {
+        generateConfigButtons();
+        setLabelText();
+      }
+
+      window.onload = onLoad;
+    </script>
+    <script>
+      const STAGING = "Staging";
+      const PRODUCTION = "Production";
+      const apiConfigurations = {
+        STAGING: {
+          name: STAGING,
+          apparitionKey: "",
+          apiUrl: "https://api-stage.apparition.link",
+          appId: "436637608899006753",
+        },
+        PRODUCTION: {
+          name: PRODUCTION,
+          apparitionKey: "",
+          apiUrl: "https://api.apparition.link",
+          appId: "1364964166783226677",
+        },
+      };
+
+      function generateConfigButtons() {
+        const configButtonsContainer = document.getElementById("configButtons");
+
+        Object.keys(apiConfigurations).forEach((key) => {
+          const config = apiConfigurations[key];
+          const button = document.createElement("button");
+          button.classList.add("btn", "btn-info");
+          button.textContent = `${config.name}`;
+
+          button.onclick = () => {
+            updateQueryParams(config.apparitionKey, config.apiUrl);
+          };
+
+          configButtonsContainer.appendChild(button);
+        });
+      }
+
+      function copySessionInfo() {
+        const pre = document.getElementById("session-info");
+        const text = pre.textContent;
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            console.log("Copied");
+          })
+          .catch((err) => {
+            console.error("Failed to copy text: ", err);
+          });
+      }
+    </script>
+  </head>
+
+  <body>
+    <div
+      style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+      "
+    >
+      <h2>Apparition Metrics Web SDK Example</h2>
+      <hr class="lineBreak horizontalLine" />
+      <div class="split-container">
+        <div class="container api-methods">
+          <section>
+            <h3>Methods</h3>
+            <a
+              href="https://help.apparition.link/developers-hub/docs/web-full-reference"
+              target="_blank"
+              >https://help.apparition.link/developers-hub/docs/web-full-reference</a
+            >
+            <hr class="lineBreak horizontalLine" />
+
+            <h4>Session</h4>
+            <div class="group">
+              <button class="btn btn-info" onclick="callData()">.data()</button>
+              <button class="btn btn-info" onclick="callLogout()">
+                Logout
+              </button>
+              <button class="btn btn-info" onclick="callFirst()">
+                .first()
+              </button>
+            </div>
+            <h4>Identity</h4>
+            <div class="group">
+              <input
+                class="example-input"
+                type="text"
+                id="identityID"
+                placeholder="test@test.com"
+              />
+              <button
+                id="setIdentity"
+                class="btn btn-info"
+                onclick="callSetIdentity()"
+              >
+                Set Identity
+              </button>
+            </div>
+            <h4>Events</h4>
+            <div class="group">
+              <button class="btn btn-info" onclick="callLogEvent('PURCHASE')">
+                Create Standard Event
+              </button>
+              <button
+                class="btn btn-info"
+                onclick="callLogEvent('testedCustomEvent')"
+              >
+                Create Custom Event
+              </button>
+            </div>
+            <h4>Sharing</h4>
+            <div class="group">
+              <button class="btn btn-info" onclick="callLink()">
+                Create Link
+              </button>
+              <button class="btn btn-info" onclick="callQrCode()">
+                Create QrCode
+              </button>
+              <button class="btn btn-info" onclick="callBanner()">
+                .banner()
+              </button>
+            </div>
+            <h4>Tracking</h4>
+            <div class="group">
+              <button class="btn btn-info" onclick="callDisableTracking()">
+                Disable Tracking
+              </button>
+              <button class="btn btn-info" onclick="callEnableTracking()">
+                Enable Tracking
+              </button>
+            </div>
+            <h3>Api Settings</h3>
+            <hr class="lineBreak horizontalLine" />
+            <div class="group" id="configButtons"></div>
+            <label id="apparitionKeyLabel" for="apparitionKeyInput"
+              >Apparition Key:</label
+            >
+            <input type="text" id="apparitionKeyInput" class="apiInput" />
+            <br />
+            <label id="apiUrlLabel" for="apiUrlInput">Api Url:</label>
+            <input type="text" id="apiUrlInput" class="apiInput" />
+            <br />
+            <button class="btn btn-info" onclick="updateQueryParams()">
+              Update Api Settings
+            </button>
+          </section>
+        </div>
+        <div class="lineBreak verticalLine"></div>
+        <div class="container api-info">
+          <section>
+            <h3>Api Requests</h3>
+            <hr class="lineBreak horizontalLine" />
+            <h4>
+              Session Info
+              <button
+                class="btn btn-info"
+                onclick="copySessionInfo()"
+                style="
+                  margin-left: 10px;
+                  font-size: 12px;
+                  padding: 2px 8px;
+                  cursor: pointer;
+                "
+              >
+                Copy
+              </button>
+            </h4>
+            <pre id="session-info">Reading session from .init()...</pre>
+            <h4>Request</h4>
+            <pre id="request">Click a button!</pre>
+            <h4>Response</h4>
+            <pre id="response">Click a button!</pre>
+          </section>
+        </div>
+      </div>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+      (function (b, r, a, n, c, h, _, s, d, k) {
+        if (!b[n] || !b[n]._q) {
+          for (; s < _.length; ) c(h, _[s++]);
+          d = r.createElement(a);
+          d.async = 1;
+          d.src = getApparitionScript();
+          k = r.getElementsByTagName(a)[0];
+          k.parentNode.insertBefore(d, k);
+          b[n] = h;
+        }
+      })(
+        window,
+        document,
+        "script",
+        "apparition",
+        function (b, r) {
+          b[r] = function () {
+            b._q.push([r, arguments]);
+          };
+        },
+        { _q: [], _v: 1 },
+        "addListener banner closeBanner closeJourney data deepview deepviewCta first init link logout removeListener setApparationViewData setIdentity track trackCommerceEvent logEvent disableTracking getBrowserFingerprintId crossPlatformIds lastAttributedTouchData setAPIResponseCallback qrCode setRequestMetaData setAPIUrl getAPIUrl setDMAParamsForEEA".split(
+          " ",
+        ),
+        0,
+      );
+
+      console.log(apparition);
+
+      apparition.setAPIUrl(getApiUrlLocal());
+
+      apparition.setAPIResponseCallback(
+        function (url, method, requestBody, error, status, responseBody) {
+          console.log(
+            "Request: " +
+              method +
+              " " +
+              url +
+              " body=" +
+              JSON.stringify(requestBody),
+          );
+          if (error) {
+            console.log(
+              "Response: Error " +
+                error +
+                "; status " +
+                JSON.stringify(status) +
+                " body=" +
+                JSON.stringify(responseBody),
+            );
+          } else {
+            console.log(
+              "Response: status " +
+                JSON.stringify(status) +
+                " body=" +
+                JSON.stringify(responseBody),
+            );
+          }
+        },
+      );
+
+      // Take the Apparition key from a meta tag
+      apparition.init(getApparitionKey(), function (err, data) {
+        // Avoid XSS by HTML escaping the data for display
+        $("#session-info").text(JSON.stringify(data, null, 2));
+        if (err) {
+          let alertMessage = err.message;
+          if (getApiUrlLocal().includes("stage")) {
+            alertMessage += ". Are you connected to VPN?";
+          }
+          alert(alertMessage);
+        }
+      });
+    </script>
+    <script type="text/javascript">
+      function getInputVal(inputID) {
+        var inputElement = $(inputID);
+        if (!inputElement.val()) {
+          inputElement.parent().addClass("has-error");
+          return "";
+        } else {
+          inputElement.parent().removeClass("has-error");
+        }
+        return DOMPurify.sanitize(inputElement.val());
+      }
+
+      const request = $("#request");
+      const response = $("#response");
+
+      const linkData = {
+        tags: ["tag1", "tag2"],
+        channel: "sample app",
+        feature: "create link",
+        stage: "created link",
+        type: 1,
+        data: {
+          mydata: "bar",
+          $desktop_url: "https://cdn.apparition.link/example.html",
+          $og_title: "Apparition Metrics",
+          $og_description: "Apparition Metrics",
+          $og_image_url: "http://apparition.link/img/logo_icon_white.png",
+        },
+      };
+
+      function callData() {
+        request.html("apparition.data();");
+        apparition.data(function (err, data) {
+          response.html(err || JSON.stringify(data));
+        });
+      }
+
+      function callFirst() {
+        request.html("apparition.first();");
+        apparition.first(function (err, data) {
+          response.html(err || JSON.stringify(data));
+        });
+      }
+
+      function callSetIdentity() {
+        const identity = getInputVal("#identityID");
+        request.text(`apparition.setIdentity('${identity}');`);
+        apparition.setIdentity(identity, function (err, data) {
+          response.text(err || JSON.stringify(data));
+        });
+      }
+
+      function callLogout() {
+        request.html("apparition.logout();");
+        apparition.logout(function (err, data) {
+          response.html(err || "undefined");
+        });
+      }
+
+      function callLogEvent(eventName) {
+        request.html(`See network tab`);
+        const eventAndCustomData = {
+          transaction_id: "tras_Id_1232343434",
+          currency: "USD",
+          revenue: 180.2,
+          shipping: 10.5,
+          tax: 13.5,
+          coupon: "promo-1234",
+          affiliation: "high_fi",
+          description: "Preferred purchase",
+          purchase_loc: "Palo Alto",
+          store_pickup: "unavailable",
+        };
+
+        const contentItems = [
+          {
+            $content_schema: "COMMERCE_PRODUCT",
+            $og_title: "Nike Shoe",
+            $og_description: "Start loving your steps",
+            $og_image_url: "http://example.com/img1.jpg",
+            $canonical_identifier: "nike/1234",
+            $publicly_indexable: false,
+            $price: 101.2,
+            $locally_indexable: true,
+            $quantity: 1,
+            $sku: "1101123445",
+            $product_name: "Runner",
+            $product_brand: "Nike",
+            $product_category: "Sporting Goods",
+            $product_variant: "XL",
+            $rating_average: 4.2,
+            $rating_count: 5,
+            $rating_max: 2.2,
+            $creation_timestamp: 1499892854966,
+            $exp_date: 1499892854966,
+            $keywords: ["sneakers", "shoes"],
+            $address_street: "230 South LaSalle Street",
+            $address_city: "Chicago",
+            $address_region: "IL",
+            $address_country: "US",
+            $address_postal_code: "60604",
+            $latitude: 12.07,
+            $longitude: -97.5,
+            $image_captions: ["my_img_caption1", "my_img_caption_2"],
+            $condition: "NEW",
+            $custom_fields: { foo1: "bar1", foo2: "bar2" },
+          },
+          {
+            $og_title: "Nike Woolen Sox",
+            $canonical_identifier: "nike/5324",
+            $og_description:
+              "Fine combed woolen sox for those who love your foot",
+            $publicly_indexable: false,
+            $price: 80.2,
+            $locally_indexable: true,
+            $quantity: 5,
+            $sku: "110112467",
+            $product_name: "Woolen Sox",
+            $product_brand: "Nike",
+            $product_category: "Apparel & Accessories",
+            $product_variant: "Xl",
+            $rating_average: 3.3,
+            $rating_count: 5,
+            $rating_max: 2.8,
+            $creation_timestamp: 1499892854966,
+          },
+        ];
+
+        const customerEventAlias = "my custom alias";
+
+        apparition.logEvent(
+          eventName,
+          eventAndCustomData,
+          contentItems,
+          customerEventAlias,
+          function (err) {
+            response.html(err || "no error");
+          },
+        );
+      }
+
+      function callLink() {
+        request.html("apparition.link(" + JSON.stringify(linkData) + ");");
+        apparition.link(linkData, function (err, link) {
+          response.html('<a href="' + link + '">' + link + "</a>");
+        });
+      }
+
+      function callQrCode() {
+        const qrCodeSettings = {
+          code_color: "#000000",
+          background_color: "#FFFFFF",
+          margin: 5,
+          width: 1000,
+          image_format: "png",
+          center_logo_url:
+            "https://apparition-assets.s3.us-west-1.amazonaws.com/apparition-badge-dark.svg",
+        };
+        const req = {
+          ...linkData,
+          qr_code_settings: qrCodeSettings,
+        };
+        request.html(`apparition.qrCode('${JSON.stringify(req)}');`);
+        apparition.qrCode(linkData, qrCodeSettings, function (err, qrCode) {
+          response.html(
+            '<img src="data:image/png;charset=utf-8;base64,' +
+              qrCode.base64() +
+              '" width="500" height="500">',
+          );
+        });
+      }
+
+      function callBanner() {
+        request.html(
+          "apparition.banner({icon: " +
+            '"http://icons.iconarchive.com/icons/wineass/ios7-redesign/512/Appstore-icon.png",' +
+            'title: "Apparition Demo App",' +
+            'description: "The Apparition demo app!",' +
+            'data: {foo: "bar"},' +
+            "reviewCount: 1000," +
+            "rating: 5," +
+            'iframe: "true",' +
+            'showMobile: "true",' +
+            'showDesktop: "true",' +
+            'disableHide: "false",' +
+            'forgetHide: "false"' +
+            "});",
+        );
+        apparition.banner(
+          {
+            icon: "http://icons.iconarchive.com/icons/wineass/ios7-redesign/512/Appstore-icon.png",
+            title: "Demo App",
+            description: "Apparition Demo app!",
+            openAppButtonText: "Open",
+            downloadAppButtonText: "Download",
+            reviewCount: 1000, // Review count
+            rating: 5, // Average rating from 0 to 5 in increments of .5
+            iframe: true, // Show banner in an iframe if CSS on your page is conflicting
+            showMobile: true, // true by default, just set here for an example
+            showDesktop: true, // true by default, just set here for an example
+            disableHide: false, // false by default, just set here for an example
+            forgetHide: false, // false by default, just set here for an example
+          }, // Banner Options
+          linkData, // Link data or string of link
+        );
+        response.html("none");
+      }
+
+      function callDisableTracking() {
+        request.text("apparition.disableTracking(true);");
+        apparition.disableTracking(true, function () {
+          response.text("none");
+        });
+      }
+
+      function callEnableTracking() {
+        request.text("apparition.disableTracking(false);");
+        apparition.disableTracking(false, function () {
+          response.text("none");
+        });
+      }
+    </script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.4.3/purify.min.js"
+      integrity="sha512-3dcbndbDLLWfKWevQu8C/1qVRcxx6h+eRDSnn3/pcBZHISRJgsj3u71U/Ad6nQVHrEi05hOSr6Hnb/p0pWc94w=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </body>
+</html>
