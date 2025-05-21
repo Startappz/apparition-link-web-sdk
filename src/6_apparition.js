@@ -853,9 +853,9 @@ Apparition.prototype["setAPIResponseCallback"] = wrap(
 );
 
 /***
- * @function Branch.setAPIUrl
+ * @function Apparition.setAPIUrl
  * @param {String} url - url
- * Sets a custom base URL for all calls to the Branch API
+ * Sets a custom base URL for all calls to the Apparition API
  */
 Apparition.prototype["setAPIUrl"] = function (url) {
   if (!utils.isValidURL(url)) {
@@ -865,9 +865,169 @@ Apparition.prototype["setAPIUrl"] = function (url) {
 };
 
 /***
- * @function Branch.getAPIUrl
- * returns the base URL for all calls to the Branch API
+ * @function Apparition.getAPIUrl
+ * returns the base URL for all calls to the Apparition API
  */
 Apparition.prototype["getAPIUrl"] = function () {
   return config.api_endpoint;
 };
+
+/**
+ * @function Apparition.data
+ * @param {function(?Error, utils.sessionData=)=} callback - _optional_ - callback to read the
+ * session data.
+ *
+ * Returns the same session information and any referring data, as
+ * `Apparition.init`, but does not require the `app_id`. This is meant to be called
+ * after `Apparition.init` has been called if you need the session information at a
+ * later point.
+ * If the Apparition session has already been initialized, the callback will return
+ * immediately, otherwise, it will return once Apparition has been initialized.
+ * ___
+ */
+/*** +TOC_ITEM #datacallback &.data()& ^ALL ***/
+Apparition.prototype["data"] = wrap(
+  callback_params.CALLBACK_ERR_DATA,
+  function (done) {
+    var data = utils.whiteListSessionData(session.get(this._storage));
+    data["referring_link"] = this._referringLink();
+    data["data_parsed"] =
+      data["data"] && data["data"].length !== 0
+        ? safejson.parse(data["data"])
+        : {};
+    done(null, data);
+  },
+);
+
+/**
+ * @function Apparition.first
+ * @param {function(?Error, utils.sessionData=)=} callback - _optional_ - callback to read the
+ * session data.
+ *
+ * Returns the same session information and any referring data, as
+ * `Apparition.init` did when the app was first installed. This is meant to be called
+ * after `Apparition.init` has been called if you need the first session information at a
+ * later point.
+ * If the Apparition session has already been initialized, the callback will return
+ * immediately, otherwise, it will return once Apparition has been initialized.
+ *
+ * ___
+ *
+ */
+/*** +TOC_ITEM #firstcallback &.first()& ^ALL ***/
+Apparition.prototype["first"] = wrap(
+  callback_params.CALLBACK_ERR_DATA,
+  function (done) {
+    done(null, utils.whiteListSessionData(session.get(this._storage, true)));
+  },
+);
+
+/**
+ * @function Apparition.setIdentity
+ * @param {string} identity - _required_ - a string uniquely identifying the user - often a user ID
+ * or email address.
+ * @param {function(?Error, Object=)=} callback - _optional_ - callback that returns the user's
+ * Apparition identity id and unique link.
+ *
+ * **[Formerly `identify()`](CHANGELOG.md)**
+ *
+ * Sets the identity of a user and returns the data. To use this function, pass
+ * a unique string that identifies the user - this could be an email address,
+ * UUID, Facebook ID, etc.
+ *
+ * ##### Usage
+ * ```js
+ * Apparition.setIdentity(
+ *     identity,
+ *     callback (err, data)
+ * );
+ * ```
+ *
+ * ##### Callback Format
+ * ```js
+ * callback(
+ *      "Error message",
+ *      {
+ *           identity_id:             '12345', // Server-generated ID of the user identity, stored in `sessionStorage`.
+ *           link:                    'url',   // New link to use (replaces old stored link), stored in `sessionStorage`.
+ *           referring_data_parsed:    { },      // Returns the initial referring data for this identity, if exists, as a parsed object.
+ *           referring_identity:      '12345'  // Returns the initial referring identity for this identity, if exists.
+ *      }
+ * );
+ * ```
+ * ___
+ */
+/*** +TOC_ITEM #setidentityidentity-callback &.setIdentity()& ^ALL ***/
+Apparition.prototype["setIdentity"] = wrap(
+  callback_params.CALLBACK_ERR_DATA,
+  function (done, identity) {
+    var self = this;
+    if (identity) {
+      var data = {
+        identity_id: self.identity_id,
+        session_id: self.session_id,
+        link: self.sessionLink,
+        developer_identity: identity,
+      };
+      self.identity = identity;
+      // store the identity
+      session.patch(self._storage, { identity: identity }, true);
+      done(null, data);
+    } else {
+      done(new Error(utils.message(utils.messages.missingIdentity)));
+    }
+  },
+);
+
+/**
+ * @function Apparition.logout
+ * @param {function(?Error)=} callback - _optional_
+ *
+ * Logs out the current session, replaces session IDs and identity IDs.
+ *
+ * ##### Usage
+ * ```js
+ * Apparition.logout(
+ *     callback (err)
+ * );
+ * ```
+ *
+ * ##### Callback Format
+ * ```js
+ * callback(
+ *      "Error message"
+ * );
+ * ```
+ * ___
+ *
+ */
+/*** +TOC_ITEM #logoutcallback &.logout()& ^ALL ***/
+Apparition.prototype["logout"] = wrap(
+  callback_params.CALLBACK_ERR,
+  function (done) {
+    var self = this;
+    var data = {
+      identity: null,
+    };
+
+    self.identity = null;
+    // make sure to update both session and local. removeNull = true deletes, in particular,
+    // identity instead of inserting null in storage.
+    session.patch(
+      self._storage,
+      data,
+      /* updateLocalStorage */ true,
+      /* removeNull */ true,
+    );
+
+    done(null);
+  },
+);
+
+Apparition.prototype["getBrowserFingerprintId"] = wrap(
+  callback_params.CALLBACK_ERR_DATA,
+  function (done) {
+    var permData = session.get(this._storage, true) || {};
+    done(null, permData["browser_fingerprint_id"] || null);
+  },
+);
