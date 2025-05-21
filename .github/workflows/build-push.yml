@@ -31,7 +31,7 @@ jobs:
           repository: Startappz/startappz-github-actions
           ref: main
           path: .startappz-github-actions
-          # token: ${{ secrets.BRANCHLET_ACCESS_TOKEN_PUBLIC }}
+          token: ${{ secrets.BRANCHLET_ACCESS_TOKEN_PUBLIC }}
 
       - name: Add INPUT_SHA env var
         run: |
