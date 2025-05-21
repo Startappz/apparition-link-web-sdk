@@ -28,8 +28,8 @@ jobs:
       - name: Install startappz-github-actions
         uses: actions/checkout@v4
         with:
-          repository: startappz/startappz-github-actions
-          ref: master
+          repository: Startappz/startappz-github-actions
+          ref: main
           path: .startappz-github-actions
           # token: ${{ secrets.BRANCHLET_ACCESS_TOKEN_PUBLIC }}
 
