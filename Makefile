@@ -24,19 +24,30 @@ src/7_initialization.js\
 src/apparition_view.js\
 src/journeys_utils.js
 
-
 EXTERN=src/extern.js
 
 VERSION=$(shell grep "version" package.json | perl -pe 's/\s+"version": "(.*)",/$$1/')
 
+ONPAGE_RELEASE=$(subst ",\",$(shell perl -pe 'BEGIN{$$sub="https://cdn.apparition.link/apparition-latest.min.js"};s\#SCRIPT_URL_HERE\#$$sub\#' src/onpage.js | $(CLOSURE_COMPILER) | node transform.js apparition_sdk))
+ONPAGE_DEV=$(subst ",\",$(shell perl -pe 'BEGIN{$$sub="build.js"};s\#SCRIPT_URL_HERE\#$$sub\#' src/onpage.js | $(CLOSURE_COMPILER) | node transform.js apparition_sdk))
+ONPAGE_TEST=$(subst ",\",$(shell perl -pe 'BEGIN{$$sub="../dist/build.js"};s\#SCRIPT_URL_HERE\#$$sub\#' src/onpage.js | $(CLOSURE_COMPILER) | node transform.js apparition_sdk))
+
 .PHONY: clean
 
-all: dist/build.js
+all: dist/build.min.js dist/build.js
 clean:
-	rm -f dist/** docs/web/3_branch_web.md test/branch-deps.js dist/build.min.js.gz test/integration-test.html
+	rm -f dist/** docs/web/3_apparition_web.md test/apparition-deps.js dist/build.min.js.gz test/integration-test.html
 release: clean all dist/build.min.js.gz
 
 
 dist/build.js: $(SOURCES) $(EXTERN)
 	mkdir -p dist && \
 	$(CLOSURE_COMPILER) $(COMPILER_ARGS) $(COMPILER_DEBUG_ARGS) > dist/build.js
+
+dist/build.min.js: $(SOURCES) $(EXTERN)
+	mkdir -p dist && \
+	$(CLOSURE_COMPILER) $(COMPILER_ARGS) $(COMPILER_MIN_ARGS) > dist/build.min.js
+
+dist/build.min.js.gz: dist/build.min.js
+	mkdir -p dist && \
+	gzip -c dist/build.min.js > dist/build.min.js.gz

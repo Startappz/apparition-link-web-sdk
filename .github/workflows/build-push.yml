@@ -2,12 +2,14 @@ name: Build and Push
 on: push
 
 env:
-  NODE_VERSION: 18
+  NODE_VERSION: 20.17.0
   JAVA_VERSION: 11
   JAVA_DISTRIBUTION: "adopt"
 
 jobs:
   build-push:
+    permissions:
+      contents: write
     name: run tests, build and push
     runs-on: ubuntu-latest
     steps:
@@ -25,13 +27,8 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
 
-      - name: Install startappz-github-actions
-        uses: actions/checkout@v4
-        with:
-          repository: Startappz/startappz-github-actions
-          ref: main
-          path: .startappz-github-actions
-          token: ${{ secrets.BRANCHLET_ACCESS_TOKEN_PUBLIC }}
+      - name: Install Semantic Release
+        run: npm install semantic-release semantic-release-gha-output --no-save
 
       - name: Add INPUT_SHA env var
         run: |
@@ -39,22 +36,38 @@ jobs:
           echo "INPUT_SHA=`echo $INPUT_SHA`" >> $GITHUB_ENV
 
       - name: Get next release version
-        uses: actions/github-script@v7
-        id: next-version
-        with:
-          result-encoding: string
-          script: |
-            const getNextVersion = require('./.startappz-github-actions/custom-scripts/next-version');
-            const nextVersion = await getNextVersion({
-              core,
-              github,
-              context,
-              sha: process.env.INPUT_SHA,
-            });
-            return nextVersion;
+        id: semantic-release
         env:
-          INPUT_SHA: ${{ env.INPUT_SHA }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release --dry-run --plugins "@semantic-release/commit-analyzer,@semantic-release/release-notes-generator,@semantic-release/github,semantic-release-gha-output"
 
-      # - name: Write version to files
-      #   run: |
-      #     ./deployment/write-versions.sh ${{ steps.next-version.outputs.result }}
+      - name: Debug
+        run: |
+          echo ${{ steps.semantic-release.outputs.tag }}
+          echo ${{ steps.semantic-release.outputs.version }}
+          echo ${{ steps.semantic-release.outputs.published }}
+
+      - name: Release failed
+        if: steps.semantic-release.outputs.version == ''
+        uses: actions/github-script@v6
+        with:
+          script: |
+            core.setFailed('Release failed')
+
+      - name: Write version to files
+        run: |
+          ./deployment/write-versions.sh ${{ steps.semantic-release.outputs.version }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check whether we will be able to make the release
+        run: make release
+
+      - name: AWS, credentials setup
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: me-central-1
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
