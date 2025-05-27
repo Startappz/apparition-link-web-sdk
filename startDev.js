@@ -5,7 +5,7 @@ const serve = require("koa-static");
 const path = require("path");
 
 const defaultDev = {
-  APIEndpoint: "http://localhost:3000",
+  APIEndpoint: "http://localhost:3000/api",
   sdkKey: "key_test_rHA0P9rl8W-fENcBGza1AA",
   port: "3001",
 };

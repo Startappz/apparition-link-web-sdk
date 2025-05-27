@@ -862,6 +862,8 @@ Apparition.prototype["setAPIUrl"] = function (url) {
     console.error("setAPIUrl: Invalid URL format. Default URL will be set.");
     return;
   }
+
+  config.api_endpoint = url;
 };
 
 /***
